@@ -1,2 +1,13 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+    themes: all;
+}
+
+
+/* Add Cursor pointer to button by default - this is coming from tailwind docs*/
+@layer base {
+    bottom:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
+}
