@@ -3,6 +3,9 @@ import path from "path";
 import cors from "cors";
 import {serve} from "inngest/express"
 import { clerkMiddleware } from '@clerk/express'
+import os from "os";
+import mongoose from "mongoose";
+
 
 import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
@@ -24,8 +27,37 @@ app.use("/api/inngest", serve({ client: inngest, functions:functns }));
 app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
  
-app.get("/health", (req, res) => {
-    res.status(200).json({msg: "api is up and running"})
+app.get("/health", async (req, res) => {
+  const mongoState = mongoose.connection.readyState;
+
+  const dbStatus = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting"
+  };
+
+  const healthData = {
+    status: mongoState === 1 ? "OK" : "DEGRADED",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(), // in seconds
+    environment: process.env.NODE_ENV || "development",
+    server: {
+      platform: os.platform(),
+      arch: os.arch(),
+      memoryUsage: process.memoryUsage(),
+      totalMemory: os.totalmem(),
+      freeMemory: os.freemem()
+    },
+    database: {
+      status: dbStatus[mongoState],
+      readyState: mongoState
+    }
+  };
+
+  const statusCode = mongoState === 1 ? 200 : 503;
+
+  res.status(statusCode).json(healthData);
 });
 
 
